@@ -1,0 +1,6 @@
+.env
+.venv/
+/Network/CNN/test.py
+.idea/
+dataset/
+results/
