@@ -8,15 +8,15 @@ MODEL2 = CNN(1, 1)
 
 #Paths
 MODEL_SAVE_PATH = f"../../results/parameters_{time.strftime('%Y%m%d')}"
-TRAIN_JSON = "../../dataset/Test_Annotation/_annotations.coco.json"
+TRAIN_JSON = "../../dataset/Train_Annotation/_annotations.coco.json"
 VALID_JSON = "../../dataset/Valid_Annotation/_annotations.coco.json"
-TEST_JSON = "../../dataset/Train_Annotation/_annotations.coco.json"
+TEST_JSON = "../../dataset/Test_Annotation/_annotations.coco.json"
 TRAIN_PLT_SAVE_PATH = f"../..results/train_graph{time.strftime('%Y%m%d')}"
 VALID_PLT_SAVE_PATH = f"../..results/valid_graph{time.strftime('%Y%m%d')}"
 
-LEARNING_RATE = 0.01
+LEARNING_RATE = 0.001
 BATCH_SIZE = 2
-EPOCHS = 1
+EPOCHS = 10
 
 #Safety features
 EPOCH_PATIENCE = 5

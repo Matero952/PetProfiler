@@ -33,8 +33,8 @@ class CNN(Module):
         #self.fc1 = nn.Linear(30*320*320, out_features=225)
         self.relu4 = nn.ReLU()
         self.fc2 = nn.Linear(in_features=225, out_features=1)
-        self.sigmoid = nn.Sigmoid()
-        self.dropout = nn.Dropout(0.5)
+        self.dropout = nn.Dropout(0.1)
+
     def forward(self, x):
         #Forward pass function
         x = self.conv1(x)
@@ -65,9 +65,9 @@ class CNN(Module):
         x = self.fc2(x)
         print(f"{x.shape}, passing through last fc layer... please?!")
         x = torch.squeeze(x)
-        output = self.sigmoid(x)
-        print("applying sigmoid...")
-        return output
+        # output = self.sigmoid(x)
+        # print("applying sigmoid...")
+        return x
 
     @staticmethod
     def weights_init(model) -> None: 

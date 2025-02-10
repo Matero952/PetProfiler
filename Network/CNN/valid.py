@@ -1,4 +1,5 @@
 #TODO Please fix this file.
+#For valid_loader, drop_last is set to true to compensate for the even batch_size and the odd amount of images in valid.
 def valid() -> None:
 		start = time.time()
 		valid_correct_sum = 0

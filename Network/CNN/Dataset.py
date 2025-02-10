@@ -47,8 +47,8 @@ class PetProfiler(Dataset):
     
     def __len__(self) -> int:
         return len(self.get_img_id())
-if __name__ == "__main__":
-    #TODO Implement multi threading eventually (:
-    jsonpath = "../../dataset/Test_Annotation/_annotations.coco.json"
-    pp = PetProfiler(jsonpath)
+# if __name__ == "__main__":
+#     #TODO Implement multi threading eventually (:
+#     jsonpath = "../../dataset/Test_Annotation/_annotations.coco.json"
+#     pp = PetProfiler(jsonpath)
 
