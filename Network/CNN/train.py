@@ -13,6 +13,7 @@ model1 = CNN(1, 1)
 optimizer = torch.optim.Adam(model1.parameters(), lr=CNNConstants.LEARNING_RATE)
 loss_fn = nn.BCEWithLogitsLoss()
 model1.to(device=CNNConstants.DEVICE)
+#TODO Implement learning rate scheduler
 
 print("Loading the PetProfiler dataset...")
 train_data = PetProfiler(CNNConstants.TRAIN_JSON)
@@ -80,11 +81,12 @@ def train() -> None:
 		else:
 			patience_counter += 1
 		if patience_counter >= 5:
-			torch.save(model1.state_dict(), "../../results/modelstate.pth")
+			torch.save(model1.state_dict(), f"../../results/modelstate{time.strftime('%Y%m%d')}.pth")
 			print(f"Training process emergency stopped.")
 			stop = True
+		print(f"Len of train_loader: {len(train_loader)}")
 		print(f"Epoch {epoch + 1}/{CNNConstants.EPOCHS}, "
-			  f"Loss: {train_loss / len(train_loader)}, "
+			  f"Average Loss: {train_loss / len(train_loader)}, "
 			  f"Accuracy: {correct / seen}, "
 			  f"LR: {current_lr}")
 	plt.style.use('ggplot')
@@ -94,11 +96,12 @@ def train() -> None:
 		print("true")
 	else:
 		print("false")
-	y1 = [epoch_loss if isinstance(epoch_loss, torch.Tensor) else loss for loss in epoch_loss]
+	print(f"epoch_loss: {epoch_loss}")
+	y1 = [epoch_loss.cpu().detach().numpy() if isinstance(epoch_loss, torch.Tensor) else loss for loss in epoch_loss]
 	y2 = epoch_accuracy
 	y3 = lr
 	fig, ax1 = plt.subplots()
-	ax1.plot(x1, y1, 'r--', label= "Loss over Epochs")
+	ax1.plot(x1, y1, 'r--', label= "Average Loss over Epochs")
 	ax1.plot(x1, y2, 'bs', label= "Accuracy over Epochs")
 	ax1.plot(x1, y3, 'g^', label= "Learning Rate")
 	plt.legend(loc= "upper left")
@@ -116,7 +119,7 @@ def train() -> None:
 	df = pd.DataFrame(train_results)
 	df.to_csv("../../results/train_results.csv", index=False)
 	print(f"Saved training results to ../../results/train_results.csv")
-	plt.savefig(f'../../results/')
+	plt.savefig(f'../../results/modelresults{time.strftime('%Y%m%d')}')
 	plt.show()
 	torch.save(model1.state_dict(), "../../results/modelstate.pth")
 
