@@ -4,7 +4,6 @@ from Network.CNN.model import CNN
 import time
 
 #Model
-MODEL2 = CNN(1, 1)
 
 #Paths
 MODEL_SAVE_PATH = f"../../results/parameters_{time.strftime('%Y%m%d')}"
@@ -14,9 +13,9 @@ TEST_JSON = "../../dataset/Test_Annotation/_annotations.coco.json"
 TRAIN_PLT_SAVE_PATH = f"../..results/train_graph{time.strftime('%Y%m%d')}"
 VALID_PLT_SAVE_PATH = f"../..results/valid_graph{time.strftime('%Y%m%d')}"
 
-LEARNING_RATE = 0.001
-BATCH_SIZE = 2
-EPOCHS = 10
+LEARNING_RATE = 0.0000001
+BATCH_SIZE = 4
+EPOCHS = 1
 
 #Safety features
 EPOCH_PATIENCE = 5

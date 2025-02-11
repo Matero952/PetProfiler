@@ -1,17 +1,7 @@
 import torch.nn as nn
 from torch.nn import Module
-#Pytorch implements nn using classes
-from torch.nn import Conv2d
-from torch.nn import Linear
-#Fully connected layers
-from torch.nn import MaxPool2d
-#2d max pooling to decrease spatial dimensions of input
-from torch.nn import ReLU
-#RELU activation function
-#Used in softmax layer to show predicted probabilities of class
 from torch import flatten
 #flattens output
-from torch import sigmoid
 import torch
 class CNN(Module):
 #This file defines my CNN and its architecture.
@@ -68,10 +58,21 @@ class CNN(Module):
         # output = self.sigmoid(x)
         # print("applying sigmoid...")
         return x
-
     @staticmethod
-    def weights_init(model) -> None: 
-        if isinstance(model, nn.Conv2d):
-            torch.nn.init.xavier_uniform_(model.weight.data)
-        #Initialize weights to reload model weights in the case of an emergency.
+    def weights_init(model) -> None:
+        print(f"Heheha")
+        for layer in model.children():
+            if hasattr(layer, "reset_parameters"):
+                # print(f"Before resetting: {layer.bias}")
+                layer.reset_parameters()
+                # print(f"After resetting: {layer.bias}")
+                print(f"{layer} has been initialized")
+                if isinstance(layer, nn.Conv2d) or isinstance(layer, nn.Linear):
+                    nn.init.xavier_uniform_(layer.weight)
+                    if layer.bias is not None:
+                        nn.init.zeros_(layer.bias)
+                        # print(f"Zeroing bias. Shape: {layer.bias.shape}")
+if __name__ == "__main__":
+    network = CNN(numChannels=2, classes=1)
+    CNN.weights_init(network)
 
