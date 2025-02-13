@@ -23,7 +23,7 @@ class CNN(Module):
         #self.fc1 = nn.Linear(30*320*320, out_features=225)
         self.relu4 = nn.ReLU()
         self.fc2 = nn.Linear(in_features=225, out_features=1)
-        self.dropout = nn.Dropout(0.1)
+        self.dropout = nn.Dropout(0.3)
 
     def forward(self, x):
         #Forward pass function

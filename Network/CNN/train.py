@@ -9,11 +9,10 @@ import torch.nn as nn
 import pandas as pd
 from Network.CNN.model import CNN
 
-model1 = CNN(1, 1)
-optimizer = torch.optim.Adam(model1.parameters(), lr=CNNConstants.LEARNING_RATE)
+model2 = CNN(1, 1)
+optimizer2 = torch.optim.Adam(model2.parameters(), lr=CNNConstants.LEARNING_RATE, weight_decay=0.05)
 loss_fn = nn.BCEWithLogitsLoss()
-model1.to(device=CNNConstants.DEVICE)
-#TODO Implement learning rate scheduler
+model2.to(device=CNNConstants.DEVICE)
 
 print("Loading the PetProfiler dataset...")
 train_data = PetProfiler(CNNConstants.TRAIN_JSON)
@@ -21,96 +20,87 @@ valid_data = PetProfiler(CNNConstants.VALID_JSON)
 train_loader = DataLoader(train_data, batch_size=CNNConstants.BATCH_SIZE, shuffle=True)
 valid_loader = DataLoader(valid_data, batch_size=CNNConstants.BATCH_SIZE, shuffle=True, drop_last=True)
 #For valid_loader, drop_last is set to true to compensate for the even batch_size and the odd amount of images in valid.
+
 def train() -> None:
-	for param in model1.parameters():
+	CNN.weights_init(model2)
+	for param in model2.parameters():
 		param.requires_grad = True
 	start = time.time()
-	epoch_accuracy = []
-	epoch_loss = []
+	epochs_loss = []
+	epochs_acc = []
 	patience_counter = 0
 	stop = False
 	lr = []
 	train_results = []
 	for epoch in range(CNNConstants.EPOCHS):
+		epoch_accuracy = []
+		epoch_loss = []
 		seen = 0
 		correct = 0
-		batch_count = 0
-		average_loss = 0
 		for (inputs, labels) in train_loader:
 			if stop:
 				break
 			inputs = inputs.to(CNNConstants.DEVICE)
 			labels = labels.to(CNNConstants.DEVICE).float()
 			print(f"Labels: {labels} shape: {labels.shape}")
-
-			train_predict = model1(inputs)
+			train_predict = model2(inputs)
 			loss = loss_fn(train_predict, labels)
 			print(f"Train predict: {train_predict}, shape: {train_predict.shape}")
 			try:
 				for prediction in train_predict:
-					correct += 1 if torch.round(prediction) >= 0.5 else 0
+					correct += 1 if torch.round(prediction) >= 0.75 else 0
 					#Acceptable accuracy threshold. Adjust later.
-					seen += 2
+					seen += 1
 			except TypeError as e:
 				print(f"train_predict: {train_predict}, shape: {train_predict.shape}")
-				correct +=1 if train_predict >= 0.5 else 0
-				seen += 2
-			batch_count += 1
-			print(f"Correct: {correct}")
-			print(f"Seen count: {seen}")
-			print(f"Loss: {loss}")
-			optimizer.zero_grad()
+				correct +=1 if train_predict >= 0.75 else 0
+				seen += 1
+			epoch_loss.append(loss.item())
+			epoch_accuracy.append(correct / seen)
+			assert seen > 0, "Um what?!"
+			print(f"Correct: {correct}. Seen: {seen}. Accuracy: {correct / seen}. Loss: {loss}")
+			optimizer2.zero_grad()
 			loss.backward()
-			optimizer.step()
-			train_loss = loss
-			if isinstance(train_loss, torch.Tensor):
-				train_loss += loss.item()
-			else:
-				train_loss += loss
-		for param_group in optimizer.param_groups:
+			optimizer2.step()
+
+		for param_group in optimizer2.param_groups:
 			current_lr = param_group['lr']
 		lr.append(current_lr)
-		accuracy = correct / seen if seen > 0 else 0
-		epoch_accuracy.append(accuracy)
-		print(f"Accuracy: {accuracy}")
-		print(f"Train Accuracy: {epoch_accuracy}")
-		average_loss = train_loss/batch_count
-		epoch_loss.append(average_loss)
-		if accuracy > 0.5:
+
+		if correct/seen > 0.6:
 			pass
 		else:
 			patience_counter += 1
 		if patience_counter >= 5:
-			torch.save(model1.state_dict(), f"../../results/modelstate{time.strftime('%Y%m%d')}.pth")
+			torch.save(model2.state_dict(), f"../../results/modelstate{time.strftime('%Y%m%d')}.pth")
 			print(f"Training process emergency stopped.")
 			stop = True
-		print(f"Len of train_loader: {len(train_loader)}")
-		print(f"Epoch {epoch + 1}/{CNNConstants.EPOCHS}, "
-			  f"Average Loss: {train_loss / len(train_loader)}, "
-			  f"Accuracy: {correct / seen}, "
-			  f"LR: {current_lr}")
+		print(f"Batch size: {CNNConstants.BATCH_SIZE}. Batches processed: {len(train_loader)}.")
+		print(f"Epoch {epoch + 1}/{CNNConstants.EPOCHS}, Accuracy: {correct / seen}, LR: {current_lr}")
+
 	plt.style.use('ggplot')
-	x1 = [x+1 for x in range(CNNConstants.EPOCHS)]
-	print(f"x: {x1}")
-	if isinstance(epoch_loss, torch.Tensor):
-		print("true")
-	else:
-		print("false")
-	print(f"epoch_loss: {epoch_loss}")
-	y1 = [epoch_loss.cpu().detach().numpy() if isinstance(epoch_loss, torch.Tensor) else loss for loss in epoch_loss]
+	#TODO Make subplots 
+	# x1 = [x+1 for x in range(CNNConstants.EPOCHS)]
+	x1 = [x for x in range(len(train_loader))]
+	print(f"Epoch_loss = {epoch_loss} Length = {len(epoch_loss)}")
+	y1 = epoch_loss
+	print(f"Epoch_accuracy: {epoch_accuracy} Length = {len(epoch_accuracy)}")
 	y2 = epoch_accuracy
-	y3 = lr
 	fig, ax1 = plt.subplots()
-	ax1.plot(x1, y1, 'r--', label= "Average Loss over Epochs")
-	ax1.plot(x1, y2, 'bs', label= "Accuracy over Epochs")
-	ax1.plot(x1, y3, 'g^', label= "Learning Rate")
-	plt.legend(loc= "upper left")
-	ax1.set_xlabel("Epochs")
-	ax1.set_ylabel("Train Loss")
+	ax1.plot(x1, y1, 'r--', label= "Loss over Epoch")
+	ax1.set_xlabel("Batches")
+	ax1.set_ylabel("Loss", color='r')
+	ax2 = ax1.twinx()
+	ax2.plot(x1, y2, 'bs', label = "Accuracy over Epoch")
+	ax2.set_ylabel("Accuracy", color='b')
+	ax1.legend(loc= "upper left")
+	ax2.legend(loc= "upper right")
+	# plt.title("Normal Training Example of Loss and Accuracy over Epoch")
+	plt.title("Normal Training Example of Loss and Accuracy over Epoch")
 
 	train_results.append({
-		"Train loss over epochs": epoch_loss,
-		"Train accuracy over epochs": epoch_accuracy,
+		"Train loss over epoch": epoch_loss,
+		"Train accuracy over epoch": epoch_accuracy,
 		"Learning Rate over epochs": lr,
 		"Time taken to train": time.time() - start
 	})
@@ -119,10 +109,73 @@ def train() -> None:
 	df = pd.DataFrame(train_results)
 	df.to_csv("../../results/train_results.csv", index=False)
 	print(f"Saved training results to ../../results/train_results.csv")
-	plt.savefig(f'../../results/modelresults{time.strftime('%Y%m%d')}')
+	plt.savefig(f'../../results/trainresults{time.strftime('%Y%m%d')}')
 	plt.show()
-	torch.save(model1.state_dict(), "../../results/modelstate.pth")
+	torch.save(model2.state_dict(), "../../results/modelstate.pth")
+
+def valid() -> None:
+	start = time.time()
+	correct = 0
+	seen = 0
+	valid_results = []
+	model2.load_state_dict(torch.load("../../results/modelstate.pth"))
+	with torch.no_grad():
+		for epoch in range(CNNConstants.EPOCHS):
+			epoch_accuracy = []
+			epoch_loss = []
+			for (inputs, labels) in valid_loader:
+				model2.eval()
+				# Sets model to evaluation model for inference.
+				inputs = inputs.to(CNNConstants.DEVICE)
+				labels = labels.to(CNNConstants.DEVICE).float()
+				valid_predict = model2(inputs)
+				loss = loss_fn(valid_predict, labels)
+				try:
+					for prediction in valid_predict:
+						correct += 1 if torch.round(prediction) >= 0.8 else 0
+						seen += 1
+				except TypeError as e:
+					print(f"train_predict: {valid_predict}, shape: {valid_predict.shape}")
+					correct += 1 if valid_predict >= 0.8 else 0
+					seen += 1
+				epoch_loss.append(loss.item())
+				epoch_accuracy.append(correct / seen)
+				print(f"Correct: {correct}. Seen: {seen}. Accuracy: {correct / seen}. Loss: {loss}")
+	print(f"Epoch_loss = {epoch_loss} Length = {len(epoch_loss)}")
+	print(f"Epoch_accuracy: {epoch_accuracy} Length = {len(epoch_accuracy)}")
+	plt.style.use('ggplot')
+	fig, ax1 = plt.subplots()
+	ax2 = ax1.twinx()
+	x1 = [x for x in range(len(valid_loader))]
+	print(f"X1: {x1}")
+	y1 = epoch_loss
+	print(f"y1: {y1}")
+	y2 = epoch_accuracy
+	print(f"y2: {y2}")
+	ax1.plot(x1, y1, 'r--', label= "Valid Loss over Epoch")
+	ax1.set_xlabel("Batches")
+	ax1.set_ylabel("Loss", color='r')
+	ax2.plot(x1, y2, 'bs', label = "Valid Accuracy over Epoch")
+	ax2.set_ylabel("Accuracy", color='b')
+	ax1.legend(loc= "upper left")
+	ax2.legend(loc = "upper right")
+	# plt.title("Normal Validation Example of Loss and Accuracy over Epoch")
+	plt.title("Normal Validation Example of Loss and Accuracy over Epoch")
+	valid_results.append({
+		"Train loss over epoch": epoch_loss,
+		"Train accuracy over epoch": epoch_accuracy,
+		"Time taken for valid": time.time() - start
+	})
+	if not os.path.exists('../../results'):
+		os.mkdir('../../results')
+	df = pd.DataFrame(valid_results)
+	df.to_csv("../../results/valid_results.csv", index=False)
+	print(f"Saved training results to ../../results/valid_results.csv")
+	plt.savefig(f'../../results/validresults{time.strftime('%Y%m%d')}')
+	plt.show()
 
 if __name__ == "__main__":
 	train()
 	print(f"Training process done.")
+	valid()
+	print(f"Validation process done.")

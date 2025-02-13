@@ -11,7 +11,14 @@ class PetProfiler(Dataset):
     def __init__(self, json_p, transform = None):
         self.json_ = json_p
         self.dataset_dic = {}
-        self.transform = ToTensor()
+        self.transform = transform or transforms.Compose([
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomRotation(14),
+            transforms.ColorJitter(brightness=0.43, contrast=0.42),
+            transforms.RandomAffine(degrees=0, translate=(0.1, 0.11)),
+            transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.5)),
+            transforms.ToTensor()])
+        # self.transform = ToTensor()
         #Converts PIL image to tensor
         self.images = self.get_img_id()
 

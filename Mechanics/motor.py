@@ -11,30 +11,14 @@ GPIO.setup(input1, GPIO.OUT)
 GPIO.setup(input2, GPIO.OUT)
 GPIO.setup(ena, GPIO.OUT)
 #Normal
-pwm = GPIO.PWM(ena, 100)
-pwm.start(20)
+pwm = GPIO.PWM(ena, 22)
+pwm.start(15)
+#15 and 15 worked i think
+#15 and 20 works
 
-try:
-    while True:
-        user_input = input()
-        if user_input == "w":
-            GPIO.output(input1, GPIO.HIGH)
-            GPIO.output(input2, GPIO.LOW)
-        elif user_input == "s":
-            GPIO.output(input1, GPIO.LOW)
-            GPIO.output(input2, GPIO.HIGH)
-        elif user_input == "e":
-            GPIO.output(input1, GPIO.LOW)
-            GPIO.output(input2, GPIO.LOW)
-except KeyboardInterrupt:
-    pwm.stop()
-    GPIO.cleanup()
-
-
-
-
-
-
+while True:
+    GPIO.output(input1, GPIO.HIGH)
+    GPIO.output(input2, GPIO.LOW)
 
 
 
