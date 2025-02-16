@@ -48,12 +48,12 @@ def train() -> None:
 			print(f"Train predict: {train_predict}, shape: {train_predict.shape}")
 			try:
 				for prediction in train_predict:
-					correct += 1 if torch.round(prediction) >= 0.75 else 0
+					correct += 1 if torch.round(torch.sigmoid(prediction)) >= 0.85 else 0
 					#Acceptable accuracy threshold. Adjust later.
 					seen += 1
 			except TypeError as e:
 				print(f"train_predict: {train_predict}, shape: {train_predict.shape}")
-				correct +=1 if train_predict >= 0.75 else 0
+				correct +=1 if torch.round(torch.sigmoid(train_predict)) >= 0.85 else 0
 				seen += 1
 			epoch_loss.append(loss.item())
 			epoch_accuracy.append(correct / seen)
@@ -111,14 +111,14 @@ def train() -> None:
 	print(f"Saved training results to ../../results/train_results.csv")
 	plt.savefig(f'../../results/trainresults{time.strftime('%Y%m%d')}')
 	plt.show()
-	torch.save(model2.state_dict(), "../../results/modelstate.pth")
+	torch.save(model2.state_dict(), "../../results/modelstate(good).pth")
 
 def valid() -> None:
 	start = time.time()
 	correct = 0
 	seen = 0
 	valid_results = []
-	model2.load_state_dict(torch.load("../../results/modelstate.pth"))
+	model2.load_state_dict(torch.load("../../results/modelstate(good).pth"))
 	with torch.no_grad():
 		for epoch in range(CNNConstants.EPOCHS):
 			epoch_accuracy = []
@@ -132,11 +132,11 @@ def valid() -> None:
 				loss = loss_fn(valid_predict, labels)
 				try:
 					for prediction in valid_predict:
-						correct += 1 if torch.round(prediction) >= 0.8 else 0
+						correct += 1 if torch.round(torch.sigmoid(prediction)) >= 0.85 else 0
 						seen += 1
 				except TypeError as e:
 					print(f"train_predict: {valid_predict}, shape: {valid_predict.shape}")
-					correct += 1 if valid_predict >= 0.8 else 0
+					correct += 1 if torch.round(torch.sigmoid(valid_predict)) >= 0.85 else 0
 					seen += 1
 				epoch_loss.append(loss.item())
 				epoch_accuracy.append(correct / seen)
