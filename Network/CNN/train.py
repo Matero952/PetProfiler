@@ -6,12 +6,16 @@ from Dataset import PetProfiler
 import CNNConstants
 import time
 import torch.nn as nn
-import pandas as pd
+from Network.CNN.CNNConstants import LEARNING_RATE
 from Network.CNN.model import CNN
+import numpy as np
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 model2 = CNN(1, 1)
-optimizer2 = torch.optim.Adam(model2.parameters(), lr=CNNConstants.LEARNING_RATE, weight_decay=0.05)
+optimizer2 = torch.optim.Adam(model2.parameters(), lr=CNNConstants.LEARNING_RATE, weight_decay=0.1)
+scheduler = ReduceLROnPlateau(optimizer2, mode='min', factor=0.3, patience=7, verbose=True)
 loss_fn = nn.BCEWithLogitsLoss()
+
 model2.to(device=CNNConstants.DEVICE)
 
 print("Loading the PetProfiler dataset...")
@@ -54,75 +58,86 @@ def train() -> None:
 			print(f"Train predict: {train_predict}, shape: {train_predict.shape}")
 			try:
 				for i in loss:
-					correct += 1 if torch.round(loss) <= 0.25 else 0
+					correct += 1 if torch.round(loss) <= 0.5 else 0
 					seen += 1
 			except TypeError:
 				print(f"Loss hehe: {loss}")
-				correct += 1 if torch.round(loss) <= 0.25 else 0
+				correct += 1 if torch.round(loss) <= 0.5 else 0
 				seen += 1
-			# try:
-			# 	for prediction in train_predict:
-			# 		correct += 1 if torch.round(torch.sigmoid(prediction)) >= 0.60 else 0
-			# 		#Acceptable accuracy threshold. Adjust later.
-			# 		seen += 1
-			# except TypeError as e:
-			# 	print(f"train_predict: {train_predict}, shape: {train_predict.shape}")
-			# 	correct +=1 if torch.round(torch.sigmoid(train_predict)) >= 0.85 else 0
-			# 	seen += 1
 			epoch_loss.append(loss.item())
-			print(f"Epoch_looss: {epoch_loss}")
-			print
+			print(f"Epoch_loss: {epoch_loss}")
 			epoch_accuracy.append(correct/seen)
 			assert seen > 0, "Um what?!"
 			print(f"Correct: {correct}. Seen: {seen}. Accuracy: {correct / seen}. Loss: {loss}")
 			optimizer2.zero_grad()
 			loss.backward()
 			optimizer2.step()
-
+		scheduler.step(np.mean(epoch_loss))
+		epochs_loss.append(epoch_loss)
+		epochs_acc.append(epoch_accuracy)
 		for param_group in optimizer2.param_groups:
 			current_lr = param_group['lr']
 		lr.append(current_lr)
-		if correct/seen > 0.6:
-			pass
-		else:
-			patience_counter += 1
-		if patience_counter >= 5:
-			torch.save(model2.state_dict(), f"../../results/modelstate{time.strftime('%Y%m%d')}.pth")
-			print(f"Training process emergency stopped.")
-			stop = True
+
 		print(f"Batch size: {CNNConstants.BATCH_SIZE}. Batches processed: {len(train_loader)}.")
 		print(f"Epoch {epoch + 1}/{CNNConstants.EPOCHS}, Accuracy: {correct / seen}, LR: {current_lr}")
-	#TODO Change this to sublots where each subplot is a different epoch. This would be a correct visualization.
 	plt.style.use('ggplot')
-	# x1 = [x+1 for x in range(CNNConstants.EPOCHS)]
-	x1 = [x for x in range(len(train_loader))]
-	print(f"Epoch_loss = {epoch_loss} Length = {len(epoch_loss)}")
-	y1 = epoch_loss
-	print(f"Epoch_accuracy: {epoch_accuracy} Length = {len(epoch_accuracy)}")
-	y2 = epoch_accuracy
-	fig, ax1 = plt.subplots()
-	ax1.plot(x1, y1, 'r--', label= "Loss over Epoch")
-	ax1.set_xlabel("Batches")
-	ax1.set_ylabel("Loss", color='r')
-	ax2 = ax1.twinx()
-	ax2.plot(x1, y2, 'bs', label = "Accuracy over Epoch")
-	ax2.set_ylabel("Accuracy", color='b')
-	ax1.legend(loc= "upper left")
-	ax2.legend(loc= "upper right")
-	# plt.title("Normal Training Example of Loss and Accuracy over Epoch")
-	plt.title(f"Training Loss and Accuracy over {CNNConstants.EPOCHS}Epoch. LR: {current_lr}")
+	plt.suptitle(f'Training Loss and Accuracy over {CNNConstants.EPOCHS} epochs. LR:{LEARNING_RATE}', fontsize=5)
+	rows = int(np.ceil(np.sqrt(CNNConstants.EPOCHS)))  # Square-like layout
+	cols = int(np.ceil(CNNConstants.EPOCHS / rows))
+	fig, axes = plt.subplots(nrows=rows, ncols=cols)
+	for i in range(CNNConstants.EPOCHS):
+		row = i // cols  # Get the row index
+		col = i % cols  # Get the column index
+		ax = axes[row, col]
+		x1 = [x for x in range(len(train_loader))]
+		y1 = epochs_loss[i]
+		y2 = epochs_acc[i]
+		ax.set_title(f"Training Loss and Accuracy over {i}/{CNNConstants.EPOCHS} epoch. LR: {current_lr}", fontsize=7)
+		ax.set_xlabel(f'Batches over {i}/{CNNConstants.EPOCHS} epoch', fontsize=5)
+		ax.set_ylabel(f'Loss over {i}/{CNNConstants.EPOCHS} epoch', color='r', fontsize=5)
+		ax.plot(x1, y1, 'r--', label=f"Loss over {i}th epoch")
+		ax1 = ax.twinx()
+		ax1.plot(x1, y2, 'b-', label=f"Accuracy over {i}/{CNNConstants.EPOCHS} epoch")
+		ax1.set_ylabel(f'Accuracy over {i}/{CNNConstants.EPOCHS} epoch', color='b', fontsize=5)
+		ax.legend(loc='upper left', fontsize=3)
+		ax1.legend(loc='upper right', fontsize=3)
+	for j in range(CNNConstants.EPOCHS, rows * cols):
+		row = j // cols
+		col = j % cols
+		axes[row, col].axis('off')
+	#
+	# # x1 = [x+1 for x in range(CNNConstants.EPOCHS)]
+	# x1 = [x for x in range(len(train_loader))]
+	# print(f"Epoch_loss = {epoch_loss} Length = {len(epoch_loss)}")
+	# y1 = epoch_loss
+	# print(f"Epoch_accuracy: {epoch_accuracy} Length = {len(epoch_accuracy)}")
+	# y2 = epoch_accuracy
+	# fig, ax1 = plt.subplots()
+	# ax1.plot(x1, y1, 'r--', label= "Loss over Epoch")
+	#
+	# ax1.set_xlabel("Batches")
+	# ax1.set_ylabel("Loss", color='r')
+	# ax2 = ax1.twinx()
+	# ax2.plot(x1, y2, 'bs', label = "Accuracy over Epoch")
+	# ax2.set_ylabel("Accuracy", color='b')
+	# ax1.legend(loc= "upper left")
+	# ax2.legend(loc= "upper right")
+	# # plt.title("Normal Training Example of Loss and Accuracy over Epoch")
+	# plt.title(f"Training Loss and Accuracy over {CNNConstants.EPOCHS}Epoch. LR: {current_lr}")
 
-	train_results.append({
-		"Train loss over epoch": epoch_loss,
-		"Train accuracy over epoch": epoch_accuracy,
-		"Learning Rate over epochs": lr,
-		"Time taken to train": time.time() - start
-	})
+	# train_results.append({
+	# 	"Train loss over epoch": epoch_loss,
+	# 	"Train accuracy over epoch": epoch_accuracy,
+	# 	"Learning Rate over epochs": lr,
+	# 	"Time taken to train": time.time() - start
+	# })
 	if not os.path.exists('../../results'):
 		os.mkdir('../../results')
-	df = pd.DataFrame(train_results)
-	df.to_csv(f"../../results/csvs/{CNNConstants.EPOCHS}epochs_lr:{current_lr}.csv", index=False)
-	print(f"Saved training results to ../../results/train_results.csv")
+	# df = pd.DataFrame(train_results)
+	# df.to_csv(f"../../results/csvs/{CNNConstants.EPOCHS}epochs_lr:{current_lr}.csv", index=False)
+	# print(f"Saved training results to ../../results/train_results.csv")
+	plt.tight_layout()
 	plt.savefig(f'../../results/{CNNConstants.EPOCHS}epochs_lr:{current_lr}.png')
 	plt.show()
 	torch.save(model2.state_dict(), f"../../results/model_{CNNConstants.EPOCHS}epochs_lr:{current_lr}.pth")
@@ -133,7 +148,7 @@ def valid() -> None:
 	seen = 0
 	valid_results = []
 	current_lr = CNNConstants.LEARNING_RATE
-	model2.load_state_dict(torch.load(f"../../results/models/model_{CNNConstants.EPOCHS}epochs_lr:{current_lr}.pth"))
+	model2.load_state_dict(torch.load(f"../../results/model_{CNNConstants.EPOCHS}epochs_lr:{current_lr}.pth"))
 	with torch.no_grad():
 			valid_accuracy = []
 			valid_loss = []
@@ -166,26 +181,24 @@ def valid() -> None:
 	print(f"y1: {y1}")
 	y2 = valid_accuracy
 	print(f"y2: {y2}")
-	ax1.plot(x1, y1, 'r--', label= "Valid Loss over Epoch")
+	ax1.plot(x1, y1, 'r--', label= "Valid Loss")
 	ax1.set_xlabel("Batches")
 	ax1.set_ylabel("Loss", color='r')
-	ax2.plot(x1, y2, 'bs', label = "Valid Accuracy over Epoch")
+	ax2.plot(x1, y2, 'bs', label = "Valid Accuracy")
 	ax2.set_ylabel("Accuracy", color='b')
 	ax1.legend(loc= "upper left")
 	ax2.legend(loc = "upper right")
 	# plt.title("Normal Validation Example of Loss and Accuracy over Epoch")
-	plt.title("Normal Validation Example of Loss and Accuracy over Epoch")
-	valid_results.append({
-		"Train loss over epoch": valid_loss,
-		"Train accuracy over epoch": valid_accuracy,
-		"Time taken for valid": time.time() - start
-	})
+	plt.title("Validation Loss and Accuracy")
+	# valid_results.append({
+	# 	"Train loss over epoch": valid_loss,
+	# 	"Train accuracy over epoch": valid_accuracy,
+	# 	"Time taken for valid": time.time() - start
+	# })
 	if not os.path.exists('../../results'):
 		os.mkdir('../../results')
-	df = pd.DataFrame(valid_results)
-	df.to_csv("../../results/valid_results.csv", index=False)
-	print(f"Saved training results to ../../results/valid_results.csv")
-	plt.savefig(f'../../results/validresults{time.strftime('%Y%m%d')}')
+
+	plt.savefig(f'../../results/validresults{CNNConstants.EPOCHS}epochs_lr:{current_lr}.png')
 	plt.show()
 
 if __name__ == "__main__":

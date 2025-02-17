@@ -23,7 +23,7 @@ class CNN(Module):
         #self.fc1 = nn.Linear(30*320*320, out_features=225)
         self.relu4 = nn.ReLU()
         self.fc2 = nn.Linear(in_features=225, out_features=1)
-        self.dropout = nn.Dropout(0.3)
+        self.dropout = nn.Dropout(0.15)
 
     def forward(self, x):
         print(f"Image shape before cv1: {x.shape}")

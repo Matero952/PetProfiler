@@ -5,3 +5,4 @@
 dataset/
 results/
 dataset(deprecated)/
+/Network/__pycache__/

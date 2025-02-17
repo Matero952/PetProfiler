@@ -13,10 +13,10 @@ class PetProfiler(Dataset):
         self.json_ = json_p
         self.dataset_dic = {}
         self.transform = transform or transforms.Compose([
-            transforms.RandomHorizontalFlip(p=0.5),
-            transforms.RandomRotation(14),
-            transforms.ColorJitter(brightness=0.43, contrast=0.42),
-            transforms.RandomAffine(degrees=0, translate=(0.1, 0.11)),
+            transforms.RandomHorizontalFlip(p=0.05),
+            transforms.RandomRotation(10),
+            transforms.ColorJitter(brightness=0.2, contrast=0.2),
+            transforms.RandomAffine(degrees=1, translate=(0.1, 0.11)),
             transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.5)),
             transforms.ToTensor()])
         # self.transform = ToTensor()
