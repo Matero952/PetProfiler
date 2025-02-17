@@ -6,6 +6,7 @@ import os
 import re
 import torchvision.transforms as transforms
 import time
+import torch
 
 class PetProfiler(Dataset):
     def __init__(self, json_p, transform = None):
@@ -21,6 +22,7 @@ class PetProfiler(Dataset):
         # self.transform = ToTensor()
         #Converts PIL image to tensor
         self.images = self.get_img_id()
+        self.__getitem__(11)
 
     def __getitem__(self, idx, bbs = None, category_id = None):
         '''Get item function.'''
@@ -36,7 +38,11 @@ class PetProfiler(Dataset):
             img = self.transform(img)
         img = transforms.Grayscale(num_output_channels=1)(img)
         print(f"img: {img}")
-        category_id = 1
+        class_mapping = {2 : 0, 1 : 1}
+        print(f"Image at index: {self.images[idx]}")
+        category_id = self.images[idx]['category_id']
+        category_id = torch.tensor(class_mapping[category_id])
+        #In my json, null(or no dog recognized) is mapped to 2 and 1 is mapped to recognized dog.
         print(f"Category id: {category_id}")
         return img, category_id
 
@@ -48,14 +54,15 @@ class PetProfiler(Dataset):
            for image in data['images']:
                 img_id = image['id']
                 file = image['file_name']
-                id_dict[img_id] = {'id' : img_id, 'path' : file}
-        # print(f"Id_dict: {id_dict}")
+                id_dict[img_id] = {'id': img_id, 'path' : file}
+           for annotation in data['annotations']:
+               img_id = annotation['image_id']
+               category_id = annotation['category_id']
+               id_dict[img_id]['category_id'] = category_id
         return id_dict
     
     def __len__(self) -> int:
         return len(self.get_img_id())
-# if __name__ == "__main__":
-#     #TODO Implement multi threading eventually (:
-#     jsonpath = "../../dataset/Test_Annotation/_annotations.coco.json"
-#     pp = PetProfiler(jsonpath)
+if __name__ == "__main__":
+    test = PetProfiler("../../dataset/Test_Annotation/_annotations.coco.json")
 
