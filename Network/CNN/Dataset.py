@@ -18,11 +18,11 @@ class PetProfiler(Dataset):
             transforms.ColorJitter(brightness=0.2, contrast=0.2),
             transforms.RandomAffine(degrees=1, translate=(0.1, 0.11)),
             transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.5)),
-            transforms.ToTensor()])
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.5], std=[0.5])])
         # self.transform = ToTensor()
         #Converts PIL image to tensor
         self.images = self.get_img_id()
-        self.__getitem__(11)
 
     def __getitem__(self, idx, bbs = None, category_id = None):
         '''Get item function.'''

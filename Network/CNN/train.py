@@ -10,24 +10,20 @@ from Network.CNN.CNNConstants import LEARNING_RATE
 from Network.CNN.model import CNN
 import numpy as np
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-
-model2 = CNN(1, 1)
-optimizer2 = torch.optim.Adam(model2.parameters(), lr=CNNConstants.LEARNING_RATE, weight_decay=0.1)
+model4 = CNN(1, 1)
+optimizer2 = torch.optim.Adam(model4.parameters(), lr=CNNConstants.LEARNING_RATE, weight_decay=0.1)
 scheduler = ReduceLROnPlateau(optimizer2, mode='min', factor=0.3, patience=7, verbose=True)
 loss_fn = nn.BCEWithLogitsLoss()
-
-model2.to(device=CNNConstants.DEVICE)
-
+model4.to(device=CNNConstants.DEVICE)
 print("Loading the PetProfiler dataset...")
 train_data = PetProfiler(CNNConstants.TRAIN_JSON)
 valid_data = PetProfiler(CNNConstants.VALID_JSON)
 train_loader = DataLoader(train_data, batch_size=CNNConstants.BATCH_SIZE, shuffle=True)
 valid_loader = DataLoader(valid_data, batch_size=CNNConstants.BATCH_SIZE, shuffle=True, drop_last=True)
 #For valid_loader, drop_last is set to true to compensate for the even batch_size and the odd amount of images in valid.
-
 def train() -> None:
-	CNN.weights_init(model2)
-	for param in model2.parameters():
+	CNN.weights_init(model4)
+	for param in model4.parameters():
 		param.requires_grad = True
 	start = time.time()
 	epochs_loss = []
@@ -47,9 +43,11 @@ def train() -> None:
 			inputs = inputs.to(CNNConstants.DEVICE)
 			labels = labels.to(CNNConstants.DEVICE).float()
 			print(f"Labels: {labels} shape: {labels.shape}")
-			train_predict = model2(inputs)
+			train_predict = model4(inputs)
 			train_predict = train_predict.view(-1, 1)
+			print(f"Train Predict after view: {train_predict}")
 			labels = labels.view(-1, 1)
+			print(f"Labels after view: {labels}")
 			loss = loss_fn(train_predict, labels)
 			if train_predict.dim() == 0:
 				print(f"Train_predict is a scalar. Reshaping now.")
@@ -78,11 +76,10 @@ def train() -> None:
 		for param_group in optimizer2.param_groups:
 			current_lr = param_group['lr']
 		lr.append(current_lr)
-
 		print(f"Batch size: {CNNConstants.BATCH_SIZE}. Batches processed: {len(train_loader)}.")
 		print(f"Epoch {epoch + 1}/{CNNConstants.EPOCHS}, Accuracy: {correct / seen}, LR: {current_lr}")
 	plt.style.use('ggplot')
-	plt.suptitle(f'Training Loss and Accuracy over {CNNConstants.EPOCHS} epochs. LR:{LEARNING_RATE}', fontsize=5)
+	plt.suptitle(f'Training Loss and Accuracy over {CNNConstants.EPOCHS} epochs. LR:{LEARNING_RATE}', fontsize=2)
 	rows = int(np.ceil(np.sqrt(CNNConstants.EPOCHS)))  # Square-like layout
 	cols = int(np.ceil(CNNConstants.EPOCHS / rows))
 	fig, axes = plt.subplots(nrows=rows, ncols=cols)
@@ -93,15 +90,15 @@ def train() -> None:
 		x1 = [x for x in range(len(train_loader))]
 		y1 = epochs_loss[i]
 		y2 = epochs_acc[i]
-		ax.set_title(f"Training Loss and Accuracy over {i}/{CNNConstants.EPOCHS} epoch. LR: {current_lr}", fontsize=7)
-		ax.set_xlabel(f'Batches over {i}/{CNNConstants.EPOCHS} epoch', fontsize=5)
-		ax.set_ylabel(f'Loss over {i}/{CNNConstants.EPOCHS} epoch', color='r', fontsize=5)
+		ax.set_title(f"Training Loss and Accuracy over {i}/{CNNConstants.EPOCHS} epoch. LR: {current_lr}", fontsize=4)
+		ax.set_xlabel(f'Batches over {i}/{CNNConstants.EPOCHS} epoch', fontsize=2)
+		ax.set_ylabel(f'Loss over {i}/{CNNConstants.EPOCHS} epoch', color='r', fontsize=2)
 		ax.plot(x1, y1, 'r--', label=f"Loss over {i}th epoch")
 		ax1 = ax.twinx()
 		ax1.plot(x1, y2, 'b-', label=f"Accuracy over {i}/{CNNConstants.EPOCHS} epoch")
-		ax1.set_ylabel(f'Accuracy over {i}/{CNNConstants.EPOCHS} epoch', color='b', fontsize=5)
-		ax.legend(loc='upper left', fontsize=3)
-		ax1.legend(loc='upper right', fontsize=3)
+		ax1.set_ylabel(f'Accuracy over {i}/{CNNConstants.EPOCHS} epoch', color='b', fontsize=2)
+		ax.legend(loc='upper left', fontsize=1)
+		ax1.legend(loc='upper right', fontsize=1)
 	for j in range(CNNConstants.EPOCHS, rows * cols):
 		row = j // cols
 		col = j % cols
@@ -140,24 +137,23 @@ def train() -> None:
 	plt.tight_layout()
 	plt.savefig(f'../../results/{CNNConstants.EPOCHS}epochs_lr:{current_lr}.png')
 	plt.show()
-	torch.save(model2.state_dict(), f"../../results/model_{CNNConstants.EPOCHS}epochs_lr:{current_lr}.pth")
-
+	torch.save(model4.state_dict(), f"../../results/model_{CNNConstants.EPOCHS}epochs_lr:{current_lr}.pth")
 def valid() -> None:
 	start = time.time()
 	correct = 0
 	seen = 0
 	valid_results = []
 	current_lr = CNNConstants.LEARNING_RATE
-	model2.load_state_dict(torch.load(f"../../results/model_{CNNConstants.EPOCHS}epochs_lr:{current_lr}.pth"))
+	model4.load_state_dict(torch.load(f"../../results/model_{CNNConstants.EPOCHS}epochs_lr:{current_lr}.pth"))
 	with torch.no_grad():
 			valid_accuracy = []
 			valid_loss = []
 			for (inputs, labels) in valid_loader:
-				model2.eval()
+				model4.eval()
 				# Sets model to evaluation model for inference.
 				inputs = inputs.to(CNNConstants.DEVICE)
 				labels = labels.to(CNNConstants.DEVICE).float()
-				valid_predict = model2(inputs)
+				valid_predict = model4(inputs)
 				loss = loss_fn(valid_predict, labels)
 				try:
 					for prediction in valid_predict:
@@ -197,12 +193,10 @@ def valid() -> None:
 	# })
 	if not os.path.exists('../../results'):
 		os.mkdir('../../results')
-
 	plt.savefig(f'../../results/validresults{CNNConstants.EPOCHS}epochs_lr:{current_lr}.png')
 	plt.show()
-
 if __name__ == "__main__":
 	train()
 	print(f"Training process done.")
-	valid()
+	# valid()
 	print(f"Validation process done.")
