@@ -1,3 +1,4 @@
+from torch._C import device
 from torch.utils.data import DataLoader
 import torch
 import matplotlib.pyplot as plt
@@ -10,11 +11,15 @@ from Network.CNN.CNNConstants import LEARNING_RATE
 from Network.CNN.model import CNN
 import numpy as np
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-model4 = CNN(1, 1)
-optimizer2 = torch.optim.Adam(model4.parameters(), lr=CNNConstants.LEARNING_RATE, weight_decay=0.1)
-scheduler = ReduceLROnPlateau(optimizer2, mode='min', factor=0.3, patience=7, verbose=True)
-loss_fn = nn.BCEWithLogitsLoss()
-model4.to(device=CNNConstants.DEVICE)
+#TODO Create confusion matrix, precision(correct predicted positives to all predicted positive cases),
+#TODO recall(correctly predicted positive to actual positives in dataset), F1-score(harmonic mean of precision and recall).
+weight_class_2 = (648 / (648 + 546))
+class_weights = torch.tensor([weight_class_2])
+odysseus = CNN(1, 1)
+midas = torch.optim.Adam(odysseus.parameters(), lr=CNNConstants.LEARNING_RATE, weight_decay=0.01)
+scheduler = ReduceLROnPlateau(midas, mode='min', factor=0.3, patience=7, verbose=True)
+loss_fn = nn.BCEWithLogitsLoss(pos_weight=class_weights.to(CNNConstants.DEVICE))
+odysseus.to(device=CNNConstants.DEVICE)
 print("Loading the PetProfiler dataset...")
 train_data = PetProfiler(CNNConstants.TRAIN_JSON)
 valid_data = PetProfiler(CNNConstants.VALID_JSON)
@@ -22,8 +27,8 @@ train_loader = DataLoader(train_data, batch_size=CNNConstants.BATCH_SIZE, shuffl
 valid_loader = DataLoader(valid_data, batch_size=CNNConstants.BATCH_SIZE, shuffle=True, drop_last=True)
 #For valid_loader, drop_last is set to true to compensate for the even batch_size and the odd amount of images in valid.
 def train() -> None:
-	CNN.weights_init(model4)
-	for param in model4.parameters():
+	CNN.weights_init(odysseus)
+	for param in odysseus.parameters():
 		param.requires_grad = True
 	start = time.time()
 	epochs_loss = []
@@ -32,6 +37,8 @@ def train() -> None:
 	stop = False
 	lr = []
 	train_results = []
+	confusion_matrix = {"True Positives" : 0, "False Positives" : 0,
+						"True Negatives" : 0, "False Negatives" : 0}
 	for epoch in range(CNNConstants.EPOCHS):
 		epoch_accuracy = []
 		epoch_loss = []
@@ -43,7 +50,7 @@ def train() -> None:
 			inputs = inputs.to(CNNConstants.DEVICE)
 			labels = labels.to(CNNConstants.DEVICE).float()
 			print(f"Labels: {labels} shape: {labels.shape}")
-			train_predict = model4(inputs)
+			train_predict = odysseus(inputs)
 			train_predict = train_predict.view(-1, 1)
 			print(f"Train Predict after view: {train_predict}")
 			labels = labels.view(-1, 1)
@@ -58,6 +65,8 @@ def train() -> None:
 				for i in loss:
 					correct += 1 if torch.round(loss) <= 0.5 else 0
 					seen += 1
+					confusion_matrix["True Positives"] += 1 if labels[i] == 1 else 0
+
 			except TypeError:
 				print(f"Loss hehe: {loss}")
 				correct += 1 if torch.round(loss) <= 0.5 else 0
@@ -67,13 +76,13 @@ def train() -> None:
 			epoch_accuracy.append(correct/seen)
 			assert seen > 0, "Um what?!"
 			print(f"Correct: {correct}. Seen: {seen}. Accuracy: {correct / seen}. Loss: {loss}")
-			optimizer2.zero_grad()
+			midas.zero_grad()
 			loss.backward()
-			optimizer2.step()
+			midas.step()
 		scheduler.step(np.mean(epoch_loss))
 		epochs_loss.append(epoch_loss)
 		epochs_acc.append(epoch_accuracy)
-		for param_group in optimizer2.param_groups:
+		for param_group in midas.param_groups:
 			current_lr = param_group['lr']
 		lr.append(current_lr)
 		print(f"Batch size: {CNNConstants.BATCH_SIZE}. Batches processed: {len(train_loader)}.")
@@ -103,57 +112,28 @@ def train() -> None:
 		row = j // cols
 		col = j % cols
 		axes[row, col].axis('off')
-	#
-	# # x1 = [x+1 for x in range(CNNConstants.EPOCHS)]
-	# x1 = [x for x in range(len(train_loader))]
-	# print(f"Epoch_loss = {epoch_loss} Length = {len(epoch_loss)}")
-	# y1 = epoch_loss
-	# print(f"Epoch_accuracy: {epoch_accuracy} Length = {len(epoch_accuracy)}")
-	# y2 = epoch_accuracy
-	# fig, ax1 = plt.subplots()
-	# ax1.plot(x1, y1, 'r--', label= "Loss over Epoch")
-	#
-	# ax1.set_xlabel("Batches")
-	# ax1.set_ylabel("Loss", color='r')
-	# ax2 = ax1.twinx()
-	# ax2.plot(x1, y2, 'bs', label = "Accuracy over Epoch")
-	# ax2.set_ylabel("Accuracy", color='b')
-	# ax1.legend(loc= "upper left")
-	# ax2.legend(loc= "upper right")
-	# # plt.title("Normal Training Example of Loss and Accuracy over Epoch")
-	# plt.title(f"Training Loss and Accuracy over {CNNConstants.EPOCHS}Epoch. LR: {current_lr}")
-
-	# train_results.append({
-	# 	"Train loss over epoch": epoch_loss,
-	# 	"Train accuracy over epoch": epoch_accuracy,
-	# 	"Learning Rate over epochs": lr,
-	# 	"Time taken to train": time.time() - start
-	# })
 	if not os.path.exists('../../results'):
 		os.mkdir('../../results')
-	# df = pd.DataFrame(train_results)
-	# df.to_csv(f"../../results/csvs/{CNNConstants.EPOCHS}epochs_lr:{current_lr}.csv", index=False)
-	# print(f"Saved training results to ../../results/train_results.csv")
 	plt.tight_layout()
 	plt.savefig(f'../../results/{CNNConstants.EPOCHS}epochs_lr:{current_lr}.png')
 	plt.show()
-	torch.save(model4.state_dict(), f"../../results/model_{CNNConstants.EPOCHS}epochs_lr:{current_lr}.pth")
+	torch.save(odysseus.state_dict(), f"../../results/model_{CNNConstants.EPOCHS}epochs_lr:{current_lr}.pth")
 def valid() -> None:
 	start = time.time()
 	correct = 0
 	seen = 0
 	valid_results = []
 	current_lr = CNNConstants.LEARNING_RATE
-	model4.load_state_dict(torch.load(f"../../results/model_{CNNConstants.EPOCHS}epochs_lr:{current_lr}.pth"))
+	odysseus.load_state_dict(torch.load(f"../../results/model_{CNNConstants.EPOCHS}epochs_lr:{current_lr}.pth"))
 	with torch.no_grad():
 			valid_accuracy = []
 			valid_loss = []
 			for (inputs, labels) in valid_loader:
-				model4.eval()
+				odysseus.eval()
 				# Sets model to evaluation model for inference.
 				inputs = inputs.to(CNNConstants.DEVICE)
 				labels = labels.to(CNNConstants.DEVICE).float()
-				valid_predict = model4(inputs)
+				valid_predict = odysseus(inputs)
 				loss = loss_fn(valid_predict, labels)
 				try:
 					for prediction in valid_predict:
@@ -198,5 +178,5 @@ def valid() -> None:
 if __name__ == "__main__":
 	train()
 	print(f"Training process done.")
-	# valid()
+	valid()
 	print(f"Validation process done.")

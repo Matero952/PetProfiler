@@ -18,8 +18,7 @@ class PetProfiler(Dataset):
             transforms.ColorJitter(brightness=0.2, contrast=0.2),
             transforms.RandomAffine(degrees=1, translate=(0.1, 0.11)),
             transforms.GaussianBlur(kernel_size=3, sigma=(0.1, 2.5)),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5], std=[0.5])])
+            transforms.ToTensor()])
         # self.transform = ToTensor()
         #Converts PIL image to tensor
         self.images = self.get_img_id()
