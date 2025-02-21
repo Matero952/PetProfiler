@@ -1,4 +1,3 @@
-from torch._C import device
 from torch.utils.data import DataLoader
 import torch
 import matplotlib.pyplot as plt
@@ -11,15 +10,18 @@ from Network.CNN.CNNConstants import LEARNING_RATE
 from Network.CNN.model import CNN
 import numpy as np
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+from statistics import harmonic_mean
+
 #TODO Create confusion matrix, precision(correct predicted positives to all predicted positive cases),
 #TODO recall(correctly predicted positive to actual positives in dataset), F1-score(harmonic mean of precision and recall).
+positive_dataset = 546
 weight_class_2 = (648 / (648 + 546))
 class_weights = torch.tensor([weight_class_2])
-odysseus = CNN(1, 1)
-midas = torch.optim.Adam(odysseus.parameters(), lr=CNNConstants.LEARNING_RATE, weight_decay=0.01)
-scheduler = ReduceLROnPlateau(midas, mode='min', factor=0.3, patience=7, verbose=True)
+model75 = CNN(1, 1)
+adam75 = torch.optim.Adam(model75.parameters(), lr=CNNConstants.LEARNING_RATE, weight_decay=1e-4)
+scheduler = ReduceLROnPlateau(adam75, mode='min', factor=0.3, patience=2, verbose=True)
 loss_fn = nn.BCEWithLogitsLoss(pos_weight=class_weights.to(CNNConstants.DEVICE))
-odysseus.to(device=CNNConstants.DEVICE)
+model75.to(device=CNNConstants.DEVICE)
 print("Loading the PetProfiler dataset...")
 train_data = PetProfiler(CNNConstants.TRAIN_JSON)
 valid_data = PetProfiler(CNNConstants.VALID_JSON)
@@ -27,8 +29,8 @@ train_loader = DataLoader(train_data, batch_size=CNNConstants.BATCH_SIZE, shuffl
 valid_loader = DataLoader(valid_data, batch_size=CNNConstants.BATCH_SIZE, shuffle=True, drop_last=True)
 #For valid_loader, drop_last is set to true to compensate for the even batch_size and the odd amount of images in valid.
 def train() -> None:
-	CNN.weights_init(odysseus)
-	for param in odysseus.parameters():
+	CNN.weights_init(model75)
+	for param in model75.parameters():
 		param.requires_grad = True
 	start = time.time()
 	epochs_loss = []
@@ -36,9 +38,9 @@ def train() -> None:
 	patience_counter = 0
 	stop = False
 	lr = []
-	train_results = []
-	confusion_matrix = {"True Positives" : 0, "False Positives" : 0,
-						"True Negatives" : 0, "False Negatives" : 0}
+	results = []
+	correct_positives = 0
+	predicted_positives = 0
 	for epoch in range(CNNConstants.EPOCHS):
 		epoch_accuracy = []
 		epoch_loss = []
@@ -50,43 +52,42 @@ def train() -> None:
 			inputs = inputs.to(CNNConstants.DEVICE)
 			labels = labels.to(CNNConstants.DEVICE).float()
 			print(f"Labels: {labels} shape: {labels.shape}")
-			train_predict = odysseus(inputs)
+			train_predict = model75(inputs)
 			train_predict = train_predict.view(-1, 1)
 			print(f"Train Predict after view: {train_predict}")
 			labels = labels.view(-1, 1)
 			print(f"Labels after view: {labels}")
 			loss = loss_fn(train_predict, labels)
 			if train_predict.dim() == 0:
-				print(f"Train_predict is a scalar. Reshaping now.")
-				train_predict = train_predict.view(4, 1)
+				break
 			print(f"Loss: {loss}")
 			print(f"Train predict: {train_predict}, shape: {train_predict.shape}")
-			try:
-				for i in loss:
-					correct += 1 if torch.round(loss) <= 0.5 else 0
-					seen += 1
-					confusion_matrix["True Positives"] += 1 if labels[i] == 1 else 0
-
-			except TypeError:
-				print(f"Loss hehe: {loss}")
-				correct += 1 if torch.round(loss) <= 0.5 else 0
+			print(f"Labels: {labels}")
+			for idx, i in enumerate(train_predict):
+				pred = torch.round(torch.sigmoid(i)).item()
+				actual = labels[idx].item()
+				correct += 1 if pred == actual else 0
 				seen += 1
+				correct_positives += 1 if pred == 1 and actual == 1 else 0
+				predicted_positives += 1 if pred == 1 else 0
 			epoch_loss.append(loss.item())
 			print(f"Epoch_loss: {epoch_loss}")
 			epoch_accuracy.append(correct/seen)
 			assert seen > 0, "Um what?!"
 			print(f"Correct: {correct}. Seen: {seen}. Accuracy: {correct / seen}. Loss: {loss}")
-			midas.zero_grad()
+			adam75.zero_grad()
 			loss.backward()
-			midas.step()
+			# torch.nn.utils.clip_grad_norm_(model72.parameters(), 1)
+			adam75.step()
 		scheduler.step(np.mean(epoch_loss))
 		epochs_loss.append(epoch_loss)
 		epochs_acc.append(epoch_accuracy)
-		for param_group in midas.param_groups:
+		for param_group in adam75.param_groups:
 			current_lr = param_group['lr']
 		lr.append(current_lr)
 		print(f"Batch size: {CNNConstants.BATCH_SIZE}. Batches processed: {len(train_loader)}.")
 		print(f"Epoch {epoch + 1}/{CNNConstants.EPOCHS}, Accuracy: {correct / seen}, LR: {current_lr}")
+
 	plt.style.use('ggplot')
 	plt.suptitle(f'Training Loss and Accuracy over {CNNConstants.EPOCHS} epochs. LR:{LEARNING_RATE}', fontsize=2)
 	rows = int(np.ceil(np.sqrt(CNNConstants.EPOCHS)))  # Square-like layout
@@ -117,23 +118,36 @@ def train() -> None:
 	plt.tight_layout()
 	plt.savefig(f'../../results/{CNNConstants.EPOCHS}epochs_lr:{current_lr}.png')
 	plt.show()
-	torch.save(odysseus.state_dict(), f"../../results/model_{CNNConstants.EPOCHS}epochs_lr:{current_lr}.pth")
+	torch.save(model75.state_dict(), f"../../results/model_{CNNConstants.EPOCHS}epochs_lr:{current_lr}.pth")
+	# Precision, recall, and F1 score
+	metrics = ["Precision", "Recall", "F1 Score"]
+	results.append(correct_positives / predicted_positives)
+	results.append(correct_positives / positive_dataset)
+	results.append(harmonic_mean(data=[correct_positives / predicted_positives, correct_positives / positive_dataset]))
+	plt.figure(figsize=(10, 6))
+	plt.bar(metrics, results, color=['red', 'blue', 'yellow'])
+	plt.xlabel('Metrics', fontsize=10)
+	plt.ylabel('Score', fontsize=10)
+	plt.title('Precision, Recall, and F1 Score of Custom CNN', fontsize=15)
+	plt.ylim(0, 1)
+	plt.show()
+	plt.savefig(f"../../results/{CNNConstants.EPOCHS}epochs_lr:{current_lr}PrecisionRecallF1.png")
 def valid() -> None:
 	start = time.time()
 	correct = 0
 	seen = 0
 	valid_results = []
 	current_lr = CNNConstants.LEARNING_RATE
-	odysseus.load_state_dict(torch.load(f"../../results/model_{CNNConstants.EPOCHS}epochs_lr:{current_lr}.pth"))
+	model75.load_state_dict(torch.load(f"../../results/model_{CNNConstants.EPOCHS}epochs_lr:{current_lr}.pth"))
 	with torch.no_grad():
 			valid_accuracy = []
 			valid_loss = []
 			for (inputs, labels) in valid_loader:
-				odysseus.eval()
+				model75.eval()
 				# Sets model to evaluation model for inference.
 				inputs = inputs.to(CNNConstants.DEVICE)
 				labels = labels.to(CNNConstants.DEVICE).float()
-				valid_predict = odysseus(inputs)
+				valid_predict = model75(inputs)
 				loss = loss_fn(valid_predict, labels)
 				try:
 					for prediction in valid_predict:

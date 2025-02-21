@@ -39,7 +39,7 @@ class CNN(Module):
         self.bc9 = nn.BatchNorm1d(128)
         self.relu10 = nn.LeakyReLU()
         self.fc5 = nn.Linear(in_features=128, out_features=1)
-        self.dropout = nn.Dropout(0.3)
+        self.dropout = nn.Dropout(0.25)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -63,6 +63,7 @@ class CNN(Module):
         x = self.maxpool1(x)
         x = flatten(x, 1)
         x = self.fc1(x)
+        #TODO DROPOUT LAYER MISSING
         x = self.relu7(x)
         x = self.fc2(x)
         x = self.bc7(x)

@@ -7,10 +7,7 @@ import torch
 from torchvision import transforms
 from PIL import Image
 model = CNN(1, 1)
-try:
-    model.load_state_dict(torch.load("../../results/modelstate(good).pth"))
-except FileNotFoundError:
-    model.load_state_dict(torch.load("../results/modelstate(good).pth"))
+model.load_state_dict(torch.load("../results/model_15epochs_lr:0.001.pth"))
 model.to(device=DEVICE)
 model.eval()
 loss_fn = torch.nn.BCEWithLogitsLoss()
@@ -28,14 +25,9 @@ def analyze(frame) -> int:
         value = pred[0]
         value = torch.sigmoid(value)
         print(f"Value: {value}")
-        assert 0 > 1
-        try:
-                print(f"Prediction: {pred[0]}")
-                dog = True if torch.round(torch.sigmoid(pred[0])) > 0.85 else False
-        except TypeError as e:
-            for prediction in pred:
-                print(f"test predict: {pred}, shape: {pred.shape}")
-                dog = True if torch.round(torch.sigmoid(pred)) >= 0.85 else False
+        print(f"Prediction: {pred[0]}")
+        dog = True if torch.round(torch.sigmoid(pred[0])) > 0.85 else False
+
         #No clue why this works but it does.
         if dog:
             print(f"Dog recognized (:")
@@ -58,7 +50,7 @@ while True:
         img = f"frame{count}.jpg"
         cv2.imwrite(img, frame)
         analyze(img)
-        time.sleep(20)
+        time.sleep(5)
         os.remove(img)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         os.remove(img)
