@@ -10,9 +10,9 @@ VALID_JSON = "../../dataset/Valid_Annotation/_annotations.coco.json"
 TEST_JSON = "../../dataset/Test_Annotation/_annotations.coco.json"
 TRAIN_PLT_SAVE_PATH = f"../..results/train_graph{time.strftime('%Y%m%d')}"
 VALID_PLT_SAVE_PATH = f"../..results/valid_graph{time.strftime('%Y%m%d')}"
-LEARNING_RATE = 0.0003
-BATCH_SIZE = 12
-EPOCHS = 10
+LEARNING_RATE = 0.0005
+BATCH_SIZE = 64
+EPOCHS = 6
 
 #Safety features
 EPOCH_PATIENCE = 5

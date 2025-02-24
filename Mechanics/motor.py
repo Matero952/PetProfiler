@@ -1,30 +1,58 @@
 import RPi.GPIO as GPIO
-
-GPIO.setwarnings(False)
-#775 motor
-input1 = 17
-input2 = 27
-ena = 4
-#Setup
-GPIO.setmode(GPIO.BCM)
-GPIO.setup(input1, GPIO.OUT)
-GPIO.setup(input2, GPIO.OUT)
-GPIO.setup(ena, GPIO.OUT)
-#Normal
-# pwm = GPIO.PWM(ena, 22)
-# pwm.start(15)
-#15 and 15 worked i think
-#15 and 20 works
-pwm = GPIO.PWM(ena, 350)  # 1kHz starting frequency
-pwm.start(20)  # Start with 1% duty cycle
-
-while True:
-    try:
-        GPIO.output(input1, GPIO.HIGH)
-        GPIO.output(input2, GPIO.LOW)
-    except KeyboardInterrupt:
-        GPIO.cleanup()
-#
-#
-#
-# #Reverse
+import time as time
+class motor:
+    def __init__(self):
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
+        self.input1 = 17
+        self.input2 = 27
+        self.ena = 4
+        GPIO.setup(self.input1, GPIO.OUT)
+        GPIO.setup(self.input2, GPIO.OUT)
+        GPIO.setup(self.ena, GPIO.OUT)
+        self.pwm = GPIO.PWM(self.ena, 5000)
+    def open(self) -> None:
+        try:
+            limit = 0.43
+            start_time = time.time()
+            print(f"Start time: {start_time}")
+            self.pwm.start(100)
+            GPIO.output(self.input1, GPIO.HIGH)
+            GPIO.output(self.input2, GPIO.LOW)
+            while time.time() - start_time < limit:
+                pass
+            else:
+                self.pwm.ChangeDutyCycle(5)
+                print(f"Time limit reached.")
+        except KeyboardInterrupt:
+                GPIO.cleanup()
+                print(f"Stopping motor...")
+        return None
+    def close(self) -> None:
+        limit = 3
+        start = time.time()
+        GPIO.output(self.input1, GPIO.LOW)
+        GPIO.output(self.input2, GPIO.HIGH)
+        self.pwm.start(0)
+        while True:
+            try:
+                user_input = input("Enter value:")
+                if user_input != "q":
+                    self.pwm.ChangeDutyCycle(0)
+                else:
+                    self.pwm.ChangeDutyCycle(45)
+                    while time.time() - start < limit:
+                        pass
+                    else:
+                        self.pwm.ChangeDutyCycle(0)
+                        break
+            except KeyboardInterrupt:
+                GPIO.cleanup()
+                print(f"Stopping motor...")
+        return None
+if __name__ == "__main__":
+    motor = motor()
+    motor.open()
+    print(f"Method finished.")
+    time.sleep(5)
+    motor.close()
