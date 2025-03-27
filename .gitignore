@@ -6,3 +6,7 @@ dataset/
 results/
 dataset(deprecated)/
 /Network/__pycache__/
+presentation/
+.env
+*.pyc
+__pycache__/
