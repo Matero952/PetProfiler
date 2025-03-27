@@ -1,11 +1,7 @@
 from torch.utils.data import Dataset
-from PIL import Image
-import json
-from torchvision.transforms import ToTensor, InterpolationMode
-import os
-import torch
+from torchvision.transforms import InterpolationMode
 from torchvision import datasets, transforms
-
+import torch.utils.data.dataloader as dataloader
 
 class PetProfilerDataset(Dataset):
     def __init__(self, root, transform=None):
@@ -23,9 +19,14 @@ class PetProfilerDataset(Dataset):
             )
         self.dataset = datasets.ImageFolder(root, self.transform)
 
+
     def __len__(self):
         return len(self.dataset)
 
     def __getitem__(self, idx):
         img, label = self.dataset[idx]
         return img, label
+        #{'dog': 0, 'none': 1}
+
+test_dataset = PetProfilerDataset('~/datasets/petprofiler-dataset/local/')
+test_loader = dataloader.DataLoader(test_dataset, batch_size=1)

@@ -13,14 +13,12 @@ from statistics import harmonic_mean
 
 #TODO Create confusion matrix, precision(correct predicted positives to all predicted positive cases),
 #TODO recall(correctly predicted positive to actual positives in dataset), F1-score(harmonic mean of precision and recall).
-positive_dataset = 546
-negative_dataset = 648
-weight_class_2 = 0.75 * (546 / (648 + 546))
-class_weights =  (torch.tensor([weight_class_2]))
+# positive_dataset = 546
+# negative_dataset = 648
+# weight_class_2 = 0.75 * (546 / (648 + 546))
+# class_weights =  (torch.tensor([weight_class_2]))
 model89 = CNN(1, 1)
 adam89 = torch.optim.Adam(model89.parameters(), lr=CNNConstants.LEARNING_RATE, weight_decay=1e-4)
-# scheduler = ReduceLROnPlateau(adam79, mode='min', factor=0.5, patience=2, verbose=True)
-# loss_fn = nn.BCEWithLogitsLoss(pos_weight=class_weights.to(CNNConstants.DEVICE))
 loss_fn = nn.BCEWithLogitsLoss()
 model89.to(device=CNNConstants.DEVICE)
 print("Loading the PetProfiler dataset...")
@@ -35,6 +33,8 @@ def train() -> None:
 		param.requires_grad = True
 	epochs_loss = []
 	epochs_acc = []
+	val_loss = []
+	val_acc = []
 	stop = False
 	lr = []
 	results = []

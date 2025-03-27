@@ -4,10 +4,14 @@ from torch import flatten
 import torch
 class CNN(Module):
 #This file defines my CNN and its architecture.
-    #Uses lenet architecture
-    def __init__(self, numChannels, classes):
+
+    def __init__(self, pretrained=False):
         super(CNN, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels= numChannels, out_channels = 12,kernel_size = (3,3), padding = (1,1), stride=(2,2))
+        self.numChannels = 3
+        self.numClasses = 2
+        self.pretrained = pretrained
+
+        self.conv1 = nn.Conv2d(in_channels= self.numChannels, out_channels = 12,kernel_size = (3,3), padding = (1,1), stride=(2,2))
         self.bn1 = nn.BatchNorm2d(12)
         self.relu1 = nn.LeakyReLU()
         self.conv2 = nn.Conv2d(in_channels= 12, out_channels= 30, kernel_size=(3,3), padding = (1,1), stride=(2, 2))
@@ -25,12 +29,6 @@ class CNN(Module):
         self.conv6 = nn.Conv2d(in_channels=75, out_channels=90, kernel_size=(2,2), padding=1, stride=(2, 2))
         self.bn6 = nn.BatchNorm2d(90)
         self.relu6 = nn.LeakyReLU()
-        # self.conv7 = nn.Conv2d(in_channels=90, out_channels=100, kernel_size=(2,2), padding=1, stride=(2, 2))
-        # self.bn7 = nn.BatchNorm2d(100)
-        # self.relu7 = nn.LeakyReLU()
-        # self.conv8  = nn.Conv2d(in_channels=100, out_channels=120, kernel_size=(2,2), padding=1, stride=(2, 2))
-        # self.bn8 = nn.BatchNorm2d(120)
-        # self.relu8 = nn.LeakyReLU()
         self.maxpool1 = nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
         self.fc1 = nn.Linear(in_features=2250, out_features=1024)
         self.bn7 = nn.BatchNorm1d(1024)
@@ -48,6 +46,7 @@ class CNN(Module):
         self.dropout = nn.Dropout(0.2)
 
     def forward(self, x):
+        print(f"Forward fufnctin called")
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu1(x)
@@ -67,7 +66,7 @@ class CNN(Module):
         x = self.bn6(x)
         x = self.relu6(x)
         x = self.maxpool1(x)
-        x = flatten(x, 1)
+        x = flatten(x, end_dim=1)
         x = self.fc1(x)
         x = self.relu7(x)
         x = self.dropout(x)
@@ -81,7 +80,10 @@ class CNN(Module):
         x = self.relu10(x)
         x = self.dropout(x)
         x = self.fc5(x)
+
         x = torch.squeeze(x)
+        x = torch.sigmoid(x)
+        print("AHHAA")
         return x
 
     @staticmethod
