@@ -10,3 +10,8 @@ presentation/
 .env
 *.pyc
 __pycache__/
+/Network/CNN/test2.py
+/Network/CNN/test3.py
+/Network/CNN/test4.py
+/hyperparameter_tuning/
+/real_life_testing/

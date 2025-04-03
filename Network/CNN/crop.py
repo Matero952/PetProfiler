@@ -33,7 +33,6 @@ def remove_white_background(image_path):
 
 
 def overlay_image(background, overlay, pos_x, pos_y):
-    """Overlay a transparent PNG on a background at a given position."""
     background.paste(overlay, (pos_x, pos_y), overlay)  # Uses transparency
     return background
 

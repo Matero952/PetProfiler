@@ -1,5 +1,5 @@
 import RPi.GPIO as GPIO
-
+#Im ngl all of this is deprecated
 GPIO.setwarnings(False)
 #775 motor
 input1 = 17

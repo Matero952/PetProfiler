@@ -2,7 +2,7 @@ from torch.utils.data import Dataset
 from torchvision.transforms import InterpolationMode
 from torchvision import datasets, transforms
 import torch.utils.data.dataloader as dataloader
-
+#This class used to be a bit larger but i cut it down a GOOD AMOUNT
 class PetProfilerDataset(Dataset):
     def __init__(self, root, transform=None):
         self.root = root

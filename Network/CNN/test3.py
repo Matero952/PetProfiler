@@ -16,7 +16,7 @@ sizes_inner_null = [223 * 3, 248 * 3, 201 * 3, 397 * 3, 225 * 3, 442 * 3, 394 * 
 
 # Create figure
 fig= plt.figure(figsize=(21, 10))
-fig.suptitle("Dataset Composition After Data Augmentation", size=30)
+fig.suptitle("Dataset Composition After Data Augmentation", size=30, fontweight="bold")
 
 ax1 = fig.add_axes((0.03, 0.37, 0.5, 0.5))
 ax2 = fig.add_axes((0.55, 0.37, 0.35, 0.5))
@@ -42,7 +42,7 @@ ax1.pie(sizes_inner_dog, labels=labels_inner_dog, autopct='%1.1f%%', radius=1.25
 for label in ax1.texts:
     label.set_fontsize(19)
     label.set_rotation(0)
-    label.set_fontweight("semibold")
+    # label.set_fontweight("semibold")
 
 # Create the inner pie chart for Null
 ax2.pie(sizes_inner_null, labels=labels_inner_null, autopct='%1.1f%%', radius=1.25, startangle=100,
@@ -50,7 +50,7 @@ ax2.pie(sizes_inner_null, labels=labels_inner_null, autopct='%1.1f%%', radius=1.
 for label in ax2.texts:
     label.set_fontsize(19)
     label.set_rotation(0)
-    label.set_fontweight("semibold")
+    # label.set_fontweight("semibold")
 #
 
 # # Equal aspect ratio ensures that pie is drawn as a circle
@@ -78,8 +78,8 @@ null_table_data = [
 
 ax1.axis('off')
 ax2.axis('off')
-ax1.set_title("Dog Class", size=25, pad=10, weight="light")
-ax2.set_title("Null Class", size=25, pad=10, weight="light")
+ax1.set_title("Dog Class", size=25, pad=10, weight="bold")
+ax2.set_title("Null Class", size=25, pad=10, weight="bold")
 table = ax1.table(cellText=dog_table_data, colLabels=None, loc='center', cellLoc='center', bbox=[-0.2, -0.73, 1.5, 0.6])
 table2 = ax2.table(cellText=null_table_data, colLabels=None, loc='center', cellLoc='center', bbox=[-0.2, -0.73, 1.5, 0.6])
 table.auto_set_font_size(False)

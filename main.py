@@ -1,5 +1,56 @@
 import cv2
 import torch
+from fastai.vision.all import *
+from fastai.vision.data import ImageDataLoaders
+from fastai.vision.learner import cnn_learner, vision_learner
+from torch.utils.data import DataLoader
+from sklearn.metrics import accuracy_score
+from fastai.optimizer import *
+from functools import partial
+from torch import optim
+from fastai.losses import CrossEntropyLossFlat
+import matplotlib.pyplot as plt
+from pathlib import Path
+from fastai.metrics import accuracy, Precision, Recall
+from fastai.vision.learner import *
+import seaborn as sns
+from sklearn.metrics import confusion_matrix
+from Network.CNN.model import CNN
+def main(model_path):
+    import cv2 as cv2
+#     cap = cv2.VideoCapture(4)
+    print(os.path.exists(model_path))
+    learn = load_learner(model_path, cpu=True)
+    while True:
+        # try:
+        #     ret, frame = cap.read()
+        #     if not ret:
+        #         print("Failed to capture frame")
+        #         break
+            img = '/home/mateo/Github/PetProfiler/run_images/1.jpg'
+            # img = '/home/mateopi/projects/PetProfiler/run_images/frame.jpg'
+            # cv2.imwrite(img, frame)
+            img = PILImage.create('/home/mateo/Github/PetProfiler/run_images/frame.jpg')
+            img = Image._show(img)
+            # img = PILImage.create('/home/mateopi/projects/PetProfiler/run_images/frame.jpg')
+            breakpoint()
+            pred, pred_idx, probs = learn.predict(img)
+            # os.remove('/home/mateo/Github/PetProfiler/run_images/frame.jpg')
+            # os.remove('/home/mateopi/projects/PetProfiler/run_images/frame.jpg')
+            print(f"pred: {pred}, pred_idx: {pred_idx}, probs: {probs}")
+            if pred == 'dog':
+                print("Pred is 0 - Dog detected")
+                # motor.open()
+            else:
+                print("Pred is 1 - Nothing")
+                pass
+            # dog is index 0
+            breakpoint()
+        # except KeyboardInterrupt or KeyError:
+        #     cap.release()
+        #     cv2.destroyAllWindows()
+        #     break
+
 class Pipeline:
     def __init__(self, motor, model, Capture, model_path):
         self.motor = motor
@@ -38,18 +89,5 @@ class Pipeline:
                 cv2.destroyAllWindows()
                 break
 if __name__ == '__main__':
-    from Mechanics import Motor
-    from Vision.inspect import Capture
-    import time
-    from Network.CNN.model import CNN
-    print(f"Script started (:")
-    motor = motor.Motor()
-    model = CNN(1, 1).to(device=torch.device("cpu"))
-    model_path = "results/megusta/model_7epochs_lr:0.00052.pth"
-    capture = Capture(model=model,  model_path=model_path)
-    petprofiler = Pipeline(motor=motor, model=model, Capture=capture, model_path=model_path)
     while True:
-        counter = 0
-        petprofiler.pipeline()
-        print("counter:", counter)
-        counter += 1
+        main('/home/mateo/Github/PetProfiler/model_v4.pkl')

@@ -1,5 +1,7 @@
 import RPi.GPIO as GPIO
 import time as time
+#Please dont look at this code its absolutely atrocious.
+#PLEASE CHECK OUT LEGO GYM THO <3
 class Motor:
     def __init__(self):
         GPIO.setmode(GPIO.BCM)
