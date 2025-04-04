@@ -153,11 +153,11 @@ def main(model_path):
         #     if not ret:
         #         print("Failed to capture frame")
         #         break
-            img = '/home/mateo/Github/PetProfiler/run_images/4.jpg'
+        #     img = '/home/mateo/Github/PetProfiler/run_images
         #CANT USE 8 or 9
             # img = '/home/mateopi/projects/PetProfiler/run_images/frame.jpg'
             # cv2.imwrite(img, frame)c
-            img = PILImage.create('/home/mateo/Github/PetProfiler/run_images/4.jpg')
+            img = PILImage.create('/home/mateo/Github/PetProfiler/run_images/6.jpg')
             # img = Image._show(img)
             # img = PILImage.create('/home/mateopi/projects/PetProfiler/run_images/frame.jpg')
 
